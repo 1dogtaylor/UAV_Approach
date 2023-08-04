@@ -6,12 +6,14 @@ import cv2
 import numpy as np
 from pyquaternion import Quaternion
 from pynput import keyboard
+import emotion_recognition
 
 global_z = 0
 global_x = 0
 global_y = 0
 global_quat = Quaternion(0,0,0,0)
 stop_flag = False
+emot_capture = False
 
 
 def local_position_callback(data):
@@ -84,6 +86,8 @@ def main():
 	
 	print("press s to start")
 	
+
+
 	while True: #wait for lower case s
 		#print(f"XYZQ: ({global_x}, {global_y}, {global_z}, {global_quat})")
 		if stop_flag:
@@ -109,6 +113,7 @@ def main():
 	moving = False
 	z_points = []
 	
+	# uav is moved to the target altitude then the average altitude is found
 	print('finding ave alt')
 	j = 0
 	while j < 500:
@@ -140,6 +145,13 @@ def main():
 				center = (int(object_region[0] + object_region[2] / 2), int(object_region[1] + object_region[3] / 2))
 				cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
 				cv2.circle(frame, center, 5, (0, 0, 255), -1)
+
+				# get the target's emotion
+				if emot_capture:
+					emot, rec_x, rec_y, rec_w, rec_h = emotion_recognition.emot_predict(frame)
+					cv2.rectangle(frame, (rec_x, rec_y), (rec_x+rec_w, rec_y+rec_h), (0, 255, 0), 2)
+					cv2.putText(frame, str(emot), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), thickness=2)
+				
 
 				# Calculate the target's distance from the UAV
 				target_distance_x, target_distance_y = posupdate(center, shape, static_z, fixed_distance_behind_target)

@@ -7,14 +7,21 @@ import numpy as np
 from pyquaternion import Quaternion
 from pynput import keyboard
 import emotion_recognition
+import sys
+import contextlib
 
 global_z = 0
 global_x = 0
 global_y = 0
 global_quat = Quaternion(0,0,0,0)
 stop_flag = False
-emot_capture = False
+emot_capture = True
 
+@contextlib.contextmanager
+def suppress_output():
+	with open('/dev/null', 'w') as null_file:
+		with contextlib.redirect_stdout(null_file):
+			yield
 
 def local_position_callback(data):
     global global_z, global_x, global_y, global_quat
@@ -148,9 +155,12 @@ def main():
 
 				# get the target's emotion
 				if emot_capture:
-					emot, rec_x, rec_y, rec_w, rec_h = emotion_recognition.emot_predict(frame)
-					cv2.rectangle(frame, (rec_x, rec_y), (rec_x+rec_w, rec_y+rec_h), (0, 255, 0), 2)
-					cv2.putText(frame, str(emot), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), thickness=2)
+					with suppress_output():
+						emot, rec_x, rec_y, rec_w, rec_h = emotion_recognition.emot_predict(frame)
+						#print(f"frame shape:{frame.shape}")
+						#print(f"emot shape:{rec_w}, {rec_h}")
+						cv2.rectangle(frame, (rec_x, rec_y), (rec_x+rec_w, rec_y+rec_h), (0, 255, 0), 2)
+						cv2.putText(frame, str(emot), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), thickness=2)
 				
 
 				# Calculate the target's distance from the UAV
@@ -205,7 +215,7 @@ def main():
 	video.release()
 	cv2.destroyAllWindows()
 
-	quit()
+	sys.exit("terminating program")
 
 
 if __name__ == "__main__":
